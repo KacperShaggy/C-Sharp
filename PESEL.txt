@@ -1,0 +1,217 @@
+﻿using System;
+
+class Pesel
+{
+    static string SformatujImie(string imie)
+    {
+        if (imie == null)
+        {
+            Console.WriteLine("Nie podałeś imienia!");
+            return null;
+        }
+        else
+            imie = imie.Replace(" ", "");
+
+        imie = imie.ToLower();
+        imie = char.ToUpper(imie[0]) + imie.Substring(1);
+
+        return imie;
+    }
+
+    static string SformatujNazwisko(string? nazwisko)
+    {
+        if (nazwisko == null)
+        {
+            Console.WriteLine("Nie podałeś nazwiska!");
+            return null;
+        }
+
+        nazwisko = nazwisko.Replace(" ", "");
+        nazwisko = nazwisko.ToLower();
+        nazwisko = char.ToUpper(nazwisko[0]) + nazwisko.Substring(1);
+
+        if (nazwisko.Contains("-"))
+        {
+            int index = nazwisko.IndexOf("-");
+            nazwisko = nazwisko.Substring(0, index + 1) + char.ToUpper(nazwisko[index + 1]) + nazwisko.Substring(index + 2);
+        }
+
+        return nazwisko;
+    }
+
+    static bool CzyPoprawnaData(string bDate)
+    {
+        if (bDate == null)
+        {
+            Console.WriteLine("Nie podałeś daty urodzenia!");
+            return false;
+        }
+
+        bDate = bDate.Replace(" ", "");
+
+        if (DateTime.TryParse(bDate, out DateTime data) && (data.Year >= 1800 && data.Year <= 2299) && (data.Month >= 1 && data.Month <= 12))
+        {
+            if (data.Year % 4 == 0 && data.Month == 2 && data.Day > 29)
+            {
+                return false;
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    static bool CzyPoprawnaPlec(string plec)
+    {
+        plec = plec.Replace(" ", "");
+
+        if (plec == null)
+        {
+            Console.WriteLine("Nie podałeś płci!");
+            return false;
+        }
+
+        if (plec.Length != 1)
+        {
+            return false;
+        }
+
+        plec = plec.ToUpper();
+
+        return plec == "K" || plec == "M";
+    }
+
+    static int SumaKontrolna(string pesel)
+    {
+        if (pesel.Length != 11)
+        {
+            return 0;
+        }
+
+        int[] wagi = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
+
+        int suma = 0;
+        for (int i = 0; i < 10; i++)
+        {
+            suma += (pesel[i] - '0') * wagi[i];
+        }
+
+        int reszta = suma % 10;
+        int sumaKontrolna = (10 - reszta) % 10;
+
+        return sumaKontrolna == (pesel[10] - '0') ? 1 : 0;
+    }
+
+    static string GetGenderFromPESEL(string pesel)
+    {
+        int genderDigit = int.Parse(pesel.Substring(9, 1));
+
+        if (genderDigit % 2 == 0)
+        {
+            return "K";
+        }
+        else
+        {
+            return "M";
+        }
+    }
+
+    static bool IsGenderValid(string pesel, string gender)
+    {
+
+
+        string peselGender = GetGenderFromPESEL(pesel);
+
+        return gender.ToUpper() == peselGender;
+    }
+
+    static bool CzyDataZgadzaSieZPESEL(string pesel, string dataUrodzenia)
+    {
+
+        string year = pesel.Substring(0, 2); 
+        string month = pesel.Substring(2, 2);
+        string day = pesel.Substring(4, 2); 
+
+        int monthInt = int.Parse(month);
+        int century = 0;
+
+        if (monthInt >= 21 && monthInt <= 32) century = 2000; 
+        else if (monthInt >= 41 && monthInt <= 52) century = 2100; 
+        else if (monthInt >= 61 && monthInt <= 72) century = 2200; 
+        else if (monthInt >= 81 && monthInt <= 92) century = 1800;
+        else century = 1900;  
+
+        monthInt -= (century == 2000) ? 20 : (century == 2100) ? 40 : (century == 2200) ? 60 : 0;
+        DateTime peselDate = new DateTime(century + int.Parse(year), monthInt, int.Parse(day));
+
+
+        DateTime userDate;
+        if (DateTime.TryParse(dataUrodzenia, out userDate))
+        {
+            return peselDate.Date == userDate.Date;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    static void Main(string[] args)
+    {
+        Console.WriteLine("Enter your name: ");
+        string? name = Console.ReadLine();
+        Console.WriteLine("Enter your lastName: ");
+        string? lastName = Console.ReadLine();
+        Console.WriteLine("Enter your birthday (yyyy-m-d lub yyyy/m/d): ");
+        string? bDay = Console.ReadLine();
+        Console.WriteLine("Enter your gender: ");
+        string? gender = Console.ReadLine();
+        Console.WriteLine("Enter PESEL number: ");
+        string? PESEL = Console.ReadLine();
+
+        string formattedName = SformatujImie(name);
+        string formattedLastName = SformatujNazwisko(lastName);
+
+        Console.WriteLine($"\n\n\n\nName: {formattedName} \nLast Name: {formattedLastName}");
+
+        if (CzyPoprawnaData(bDay))
+        {
+            Console.WriteLine($"Date of birth: {bDay}");
+        }
+
+        if (CzyPoprawnaPlec(gender))
+        {
+            Console.WriteLine($"Gender: {gender.ToUpper()}");
+        }
+
+        if (PESEL != null && SumaKontrolna(PESEL) == 1)
+        {
+            Console.WriteLine("PESEL is valid.");
+        }
+        else
+        {
+            Console.WriteLine("PESEL is invalid.");
+        }
+
+        if (PESEL != null && IsGenderValid(PESEL, gender))
+        {
+            Console.WriteLine("Gender is valid in PESEL.");
+        }
+        else
+        {
+            Console.WriteLine("Gender is not valid in PESEL.");
+        }
+
+        if (CzyDataZgadzaSieZPESEL(PESEL, bDay) == true)
+        {
+            Console.WriteLine($"PESEL is okay. Your PESEL: {PESEL} ");
+        }
+        else
+        {
+            Console.WriteLine("Birth date is not valid in PESEL.");
+        }
+
+    }
+}
